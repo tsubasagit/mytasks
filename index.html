@@ -165,12 +165,6 @@
   .chips .tag:nth-child(3){animation-delay:.1s}
   .chips .tag:nth-child(4){animation-delay:.15s}
   @keyframes chipIn{from{opacity:0;transform:translateY(6px) scale(.8)}}
-  .hint{font-size:.71rem;color:var(--faint);margin:9px 4px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-  .hint code{
-    background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95em;color:var(--sub);
-  }
-
   /* ============ toolbar ============ */
   .bar{display:flex;gap:10px;align-items:center;margin:28px 0 12px;flex-wrap:wrap}
   .tabs{
@@ -190,21 +184,6 @@
   }
   .tabs button:hover{color:var(--text)}
   .tabs button.on{color:var(--pillink)}
-  .search{flex:1;min-width:150px;position:relative}
-  .search::before{content:"";position:absolute;left:13px;top:50%;margin-top:-8px;width:11px;height:11px;
-    border:1.8px solid var(--faint);border-radius:50%;pointer-events:none;transition:border-color .2s}
-  .search::after{content:"";position:absolute;left:22px;top:50%;margin-top:2px;width:6px;height:1.8px;border-radius:2px;
-    background:var(--faint);transform:rotate(45deg);transform-origin:left center;pointer-events:none;transition:background .2s}
-  .search:focus-within::before{border-color:var(--acc-2)}
-  .search:focus-within::after{background:var(--acc-2)}
-  .search input{
-    width:100%;background:var(--panel);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);
-    border:1px solid var(--border);border-radius:12px;padding:9.5px 12px 9.5px 32px;font-size:.87rem;outline:none;
-    box-shadow:var(--shadow-xs);transition:border-color .2s,box-shadow .25s;
-  }
-  .search input::placeholder{color:var(--faint)}
-  .search input:focus{border-color:var(--acc-2);box-shadow:0 0 0 3px var(--acc-soft),0 0 20px -4px var(--ring2)}
-
   .projects{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
   .pchip{
     border:1px solid var(--border);background:var(--panel);
@@ -410,7 +389,7 @@
     .stat .n{font-size:1.45rem}
   }
   @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-    .stat,form.add,.tabs,.search input,.pchip,.task,.tools button,.empty,.iconbtn{background:var(--solid)}
+    .stat,form.add,.tabs,.pchip,.task,.tools button,.empty,.iconbtn{background:var(--solid)}
   }
   @media(prefers-reduced-motion:reduce){
     *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
@@ -455,14 +434,6 @@
     <button type="submit">追加</button>
   </form>
   <div class="chips" id="chips"></div>
-  <div class="hint">
-    <code>#プロジェクト</code>
-    <code>@今日 / @明日 / @金 / @8/31 / @+3</code>
-    <code>! 高</code>
-    <code>!! 最優先</code>
-    <code>*毎日 / *毎週 / *毎月</code>
-  </div>
-
   <div class="bar">
     <div class="tabs" id="tabs">
       <span class="pill" id="tabPill"></span>
@@ -471,7 +442,6 @@
       <button data-view="all">すべて</button>
       <button data-view="done">完了</button>
     </div>
-    <div class="search"><input id="q" placeholder="検索…  ( / でフォーカス )"></div>
   </div>
   <div class="projects" id="projects"></div>
 
@@ -513,7 +483,7 @@
     catch(e){ toast("保存できませんでした（ブラウザの設定を確認してください）"); }
   }
   var tasks = load();
-  var view = "today", query = "", projFilter = "", openId = null, undoBuf = null, toastTimer = null;
+  var view = "today", projFilter = "", openId = null, undoBuf = null, toastTimer = null;
   var MOTION = !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   var animOpen = null;
   function quiet(vt){
@@ -643,12 +613,10 @@
 
   /* ---------- filter & sort ---------- */
   function visible(){
-    var q = query.trim().toLowerCase();
     return tasks.filter(function(t){
       if(view === "done"){ if(!t.done) return false; }
       else if(t.done) return false;
       if(projFilter && t.project !== projFilter) return false;
-      if(q && (t.title + " " + t.project + " " + t.note).toLowerCase().indexOf(q) < 0) return false;
       if(view === "today") return !!t.due && diffDays(t.due) <= 0;
       if(view === "week") return !!t.due && diffDays(t.due) <= 6;
       return true;
@@ -795,8 +763,8 @@
   }
 
   function emptyHTML(){
-    if(query || projFilter){
-      return '<div class="empty"><div class="big">🔍</div><p>条件に合うタスクはありません。</p></div>';
+    if(projFilter){
+      return '<div class="empty"><div class="big">🔍</div><p>このプロジェクトに該当するタスクはありません。</p></div>';
     }
     var m = {
       today: ["☕", "今日やることはありません。", "期限を切ったタスクだけがここに出ます。"],
@@ -1000,11 +968,6 @@
     vtRender();
   });
 
-  document.getElementById("q").addEventListener("input", function(e){
-    query = e.target.value;
-    render();
-  });
-
   var listEl = document.getElementById("list");
   listEl.addEventListener("click", function(e){
     if(e.target.id === "seedBtn"){ seed(); return; }
@@ -1073,7 +1036,6 @@
     var tag = (e.target.tagName || "").toLowerCase();
     if(tag === "input" || tag === "textarea" || tag === "select") return;
     if(e.key === "n"){ e.preventDefault(); document.getElementById("addInput").focus(); }
-    if(e.key === "/"){ e.preventDefault(); document.getElementById("q").focus(); }
   });
 
   /* ---------- theme ---------- */
