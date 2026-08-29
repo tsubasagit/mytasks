@@ -34,10 +34,12 @@ python -m http.server 8945 --directory .
 | render | `render()` `taskHTML()` `renderStats()` `renderProjects()` `emptyHTML()` |
 | events | イベント委譲。`#list` に click / input / change / keydown を1つずつ |
 | import/export | JSON 書き出し・読み込み、Markdown コピー、古い完了の整理 |
+| fx | `vtRender()`（View Transitions で再描画をモーフ）、`stagger` `burst` `confetti` `toggleFX` `deleteFX`（演出→コミットの2段階）、タブピル測位 `movePill()`、統計カウントアップ `tween()` |
 
 ## 実装ルール
 
-- **全描画は `render()` 経由。** DOM を部分的に書き換えない（`renderStats()` だけは編集中のちらつき回避で例外）。
+- **全描画は `render()` 経由。** DOM を部分的に書き換えない（`renderStats()` だけは編集中のちらつき回避で例外）。ユーザー操作起点の再描画は原則 `vtRender()`（View Transitions ラッパ）を呼ぶ。検索入力中とタブ切替（stagger 入場）だけは素の `render()`。
+- **アニメーションは transform / opacity のみ**（オーロラ背景含む）。`prefers-reduced-motion` と VT 非対応ブラウザでは全演出がスキップされ機能はそのまま動く。rAF 依存の処理には必ず setTimeout フォールバックを付ける（非表示タブで rAF が止まるため）。
 - **イベントは委譲で書く。** タスクは毎回 innerHTML で作り直すので、個別要素へのリスナー登録は禁止。
 - **`data-act` 属性でアクションを表す。** クリック処理は `e.target.closest('[data-act]')` で分岐。
 - **ユーザー入力は必ず `esc()` を通す。** `innerHTML` に生の値を入れない。
